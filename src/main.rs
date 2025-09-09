@@ -1,11 +1,11 @@
+mod clipboard;
+
 use bevy::{
     input::common_conditions::input_just_pressed, log::LogPlugin, prelude::*,
     window::WindowResolution,
 };
 use block2::RcBlock;
-use objc2::runtime::ProtocolObject;
-use objc2_app_kit::{NSColor, NSColorSampler, NSPasteboard, NSPasteboardWriting};
-use objc2_foundation::{NSArray, NSString};
+use objc2_app_kit::{NSColor, NSColorSampler};
 use std::sync::{OnceLock, mpsc};
 
 static PICK_TX: OnceLock<mpsc::Sender<Color>> = OnceLock::new();
@@ -108,25 +108,9 @@ fn pick_update(
 
         let hex = color.to_srgba().to_hex();
 
-        copy_to_clipboard(&hex);
+        clipboard::copy(&hex);
 
         clear_color.0 = color;
         displayed_hex_code_text.0 = hex;
-    }
-}
-
-fn copy_to_clipboard(s: &str) {
-    let pasteboard = unsafe { NSPasteboard::generalPasteboard() };
-
-    unsafe {
-        pasteboard.clearContents();
-    }
-
-    let string = NSString::from_str(s);
-    let string_protocol = ProtocolObject::<dyn NSPasteboardWriting>::from_retained(string);
-    let array = NSArray::from_retained_slice(&[string_protocol]);
-
-    unsafe {
-        pasteboard.writeObjects(&array);
     }
 }

@@ -1,8 +1,10 @@
 mod clipboard;
 
 use bevy::{
-    input::common_conditions::input_just_pressed, log::LogPlugin, prelude::*,
-    window::WindowResolution,
+    input::common_conditions::input_just_pressed,
+    log::LogPlugin,
+    prelude::*,
+    window::{WindowLevel, WindowResolution},
 };
 use block2::RcBlock;
 use objc2_app_kit::{NSColor, NSColorSampler};
@@ -19,7 +21,10 @@ fn main() {
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        resolution: WindowResolution::new(200.0, 200.0),
+                        resolution: WindowResolution::new(240.0, 160.0),
+                        window_level: WindowLevel::AlwaysOnTop,
+                        resizable: false,
+                        title: "Pigment".into(),
                         ..default()
                     }),
                     ..default()
@@ -30,6 +35,10 @@ fn main() {
         .insert_non_send_resource(PickedColorReceiver(rx))
         .add_systems(Startup, setup_ui)
         .add_systems(Update, pick.run_if(input_just_pressed(KeyCode::Space)))
+        .add_systems(
+            Update,
+            click_update.run_if(input_just_pressed(MouseButton::Left)),
+        )
         .add_systems(Update, pick_update)
         .run();
 }
@@ -112,5 +121,12 @@ fn pick_update(
 
         clear_color.0 = color;
         displayed_hex_code_text.0 = hex;
+    }
+}
+
+fn click_update(displayed_hex_code_text: Single<&Text, With<DisplayedHexCodeText>>) {
+    let hex = &*displayed_hex_code_text.0;
+    if !hex.is_empty() {
+        clipboard::copy(hex);
     }
 }

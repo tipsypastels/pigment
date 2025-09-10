@@ -2,7 +2,7 @@ use crate::{markers::UpdateMarker, value::ColorValue};
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use std::sync::{OnceLock, mpsc};
 
-static TX: OnceLock<mpsc::Sender<Color>> = OnceLock::new();
+static TX: OnceLock<mpsc::Sender<Option<Color>>> = OnceLock::new();
 
 pub struct PickerPlugin;
 
@@ -11,7 +11,8 @@ impl Plugin for PickerPlugin {
         let (tx, rx) = mpsc::channel();
         let _ = TX.set(tx);
 
-        app.insert_non_send_resource(Rx(rx))
+        app.insert_resource(PickerOpen(false))
+            .insert_non_send_resource(Rx(rx))
             .add_systems(
                 Update,
                 pick.run_if(input_just_pressed(KeyCode::Space))
@@ -21,15 +22,28 @@ impl Plugin for PickerPlugin {
     }
 }
 
-struct Rx(mpsc::Receiver<Color>);
+#[derive(Resource, Default)]
+pub struct PickerOpen(pub bool);
 
-fn pick() {
+struct Rx(mpsc::Receiver<Option<Color>>);
+
+fn pick(mut picker_open: ResMut<PickerOpen>) {
+    if picker_open.0 {
+        return;
+    }
+
+    picker_open.0 = true;
+
     use block2::RcBlock;
     use objc2_app_kit::{NSColor, NSColorSampler};
 
     let sampler = unsafe { NSColorSampler::new() };
     let block = RcBlock::new(move |color: *mut NSColor| {
         if color.is_null() {
+            if let Some(tx) = TX.get() {
+                let _ = tx.send(None);
+            }
+
             return;
         }
 
@@ -47,7 +61,7 @@ fn pick() {
         let color = Color::srgba(red as f32, green as f32, blue as f32, alpha as f32);
 
         if let Some(tx) = TX.get() {
-            let _ = tx.send(color);
+            let _ = tx.send(Some(color));
         }
     });
 
@@ -56,8 +70,16 @@ fn pick() {
     }
 }
 
-fn on_pick(mut color_value: ResMut<ColorValue>, rx: NonSend<Rx>) {
+fn on_pick(
+    mut picker_open: ResMut<PickerOpen>,
+    mut color_value: ResMut<ColorValue>,
+    rx: NonSend<Rx>,
+) {
     while let Ok(color) = rx.0.try_recv() {
-        color_value.0 = color;
+        picker_open.0 = false;
+
+        if let Some(color) = color {
+            color_value.0 = color;
+        }
     }
 }

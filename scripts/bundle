@@ -1,0 +1,15 @@
+#!/bin/bash
+
+APP="Pigment"
+CRATE="pigment"
+
+mkdir -p "${APP}.app/Contents/MacOS"
+mkdir -p "${APP}.app/Contents/Resources"
+
+cp Info.plist "${APP}.app/Contents/Info.plist"
+cp -a assets "${APP}.app/Contents/MacOS/"
+
+cargo build --release --target x86_64-apple-darwin
+
+cp "target/x86_64-apple-darwin/release/${CRATE}" \
+   "${APP}.app/Contents/MacOS/${APP}"

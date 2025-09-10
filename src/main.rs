@@ -1,4 +1,6 @@
 mod clipboard;
+mod markers;
+mod picker;
 
 use bevy::{
     input::common_conditions::input_just_pressed,
@@ -123,7 +125,7 @@ fn pick() {
 
 fn pick_update(
     mut clear_color: ResMut<ClearColor>,
-    mut displayed_hex_code_text: Single<&mut Text, With<DisplayedHexCodeText>>,
+    mut displayed_hex_code_text: Single<(&mut Text, &mut TextColor), With<DisplayedHexCodeText>>,
     rx: NonSend<PickedColorReceiver>,
 ) {
     while let Ok(color) = rx.0.try_recv() {
@@ -132,7 +134,12 @@ fn pick_update(
         clipboard::copy(&hex);
 
         clear_color.0 = color;
-        displayed_hex_code_text.0 = hex;
+        displayed_hex_code_text.0.0 = hex;
+        displayed_hex_code_text.1.0 = if color.luminance() > 0.5 {
+            Color::BLACK
+        } else {
+            Color::WHITE
+        };
     }
 }
 

@@ -66,6 +66,7 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                         width: Val::Percent(100.0),
                         height: Val::Percent(100.0),
                         border: UiRect::all(Val::Px(6.0)),
+                        flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
                         justify_content: JustifyContent::Center,
                         ..default()
@@ -81,8 +82,36 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                             ..default()
                         },
                         TextColor(Color::BLACK),
-                        crate::markers::HexTextMarker,
+                        HexTextMarker,
                     ));
+
+                    builder
+                        .spawn(Node {
+                            margin: UiRect::top(Val::Px(10.0)),
+                            column_gap: Val::Px(10.0),
+                            ..default()
+                        })
+                        .with_children(|builder| {
+                            builder.spawn((
+                                Text::new("Pick [Sp]"),
+                                TextFont {
+                                    font: asset_server.load("fonts/CourierPrime.ttf"),
+                                    font_size: 20.0,
+                                    ..default()
+                                },
+                                TextColor(Color::BLACK),
+                            ));
+
+                            builder.spawn((
+                                Text::new("Copy [C]"),
+                                TextFont {
+                                    font: asset_server.load("fonts/CourierPrime.ttf"),
+                                    font_size: 20.0,
+                                    ..default()
+                                },
+                                TextColor(Color::BLACK),
+                            ));
+                        });
                 });
         });
 }

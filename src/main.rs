@@ -98,8 +98,6 @@ fn pick() {
             return;
         }
 
-        println!("Called the block");
-
         let color = unsafe { &*color };
 
         let mut red = 0.0f64;
@@ -111,14 +109,10 @@ fn pick() {
             color.getRed_green_blue_alpha(&mut red, &mut green, &mut blue, &mut alpha);
         }
 
-        println!("Got the color");
-
         let color = Color::srgba(red as f32, green as f32, blue as f32, alpha as f32);
 
         if let Some(tx) = PICK_TX.get() {
-            println!("Sending the color");
             let _ = tx.send(color);
-            println!("Sent the color");
         }
     });
 
@@ -133,8 +127,6 @@ fn pick_update(
     rx: NonSend<PickedColorReceiver>,
 ) {
     while let Ok(color) = rx.0.try_recv() {
-        println!("Received the color");
-
         let hex = color.to_srgba().to_hex();
 
         clipboard::copy(&hex);

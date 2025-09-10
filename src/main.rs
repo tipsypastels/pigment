@@ -1,9 +1,10 @@
+mod draggable;
 mod markers;
 mod picker;
 mod utils;
 mod value;
 
-use self::{markers::*, picker::*, value::*};
+use self::{draggable::*, markers::*, picker::*, value::*};
 use bevy::{
     log::LogPlugin,
     prelude::*,
@@ -27,7 +28,7 @@ fn main() {
                 })
                 .disable::<LogPlugin>(),
         )
-        .add_plugins((ValuePlugin, PickerPlugin))
+        .add_plugins((ValuePlugin, PickerPlugin, DraggablePlugin))
         .insert_resource(ClearColor(Color::WHITE))
         .configure_sets(
             Update,

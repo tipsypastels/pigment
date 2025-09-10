@@ -1,11 +1,15 @@
 mod clipboard;
+mod gradient;
+mod value;
 
 use bevy::{
+    color::palettes::css::{RED, YELLOW},
     input::common_conditions::input_just_pressed,
     log::LogPlugin,
     prelude::*,
     window::{WindowLevel, WindowResolution},
 };
+use bevy_ui_gradients::*;
 use block2::RcBlock;
 use objc2_app_kit::{NSColor, NSColorSampler};
 use std::sync::{OnceLock, mpsc};
@@ -31,7 +35,7 @@ fn main() {
                 })
                 .disable::<LogPlugin>(),
         )
-        .insert_resource(ClearColor(Color::WHITE))
+        .add_plugins(UiGradientsPlugin)
         .insert_non_send_resource(PickedColorReceiver(rx))
         .add_systems(Startup, setup_ui)
         .add_systems(Update, pick.run_if(input_just_pressed(KeyCode::Space)))
@@ -44,18 +48,25 @@ fn main() {
 }
 
 #[derive(Component)]
+struct DisplayedBackgroundGradientMarker;
+
+#[derive(Component)]
 struct DisplayedHexCodeText;
 
 fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2d);
     commands
-        .spawn(Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            ..default()
-        })
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            BackgroundGradient::from(LinearGradient::new(0.0, vec![RED.into(), YELLOW.into()])),
+            DisplayedBackgroundGradientMarker,
+        ))
         .with_children(|builder| {
             builder.spawn((
                 Text::new(""),

@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 bevy = "0.16.1"
+bevy-ui-gradients = "0.4.0"
 block2 = "0.6.1"
 objc2 = "0.6.2"
 objc2-app-kit = { version = "0.3.1", features = [

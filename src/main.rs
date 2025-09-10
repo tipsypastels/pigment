@@ -40,7 +40,7 @@ fn main() {
         .add_systems(Startup, setup_ui)
         .add_systems(
             Update,
-            (update_ui_text, update_ui_bg).in_set(UpdateMarker::Ui),
+            (update_ui_text_hex, update_ui_text_color, update_ui_bg).in_set(UpdateMarker::Ui),
         )
         .run();
 }
@@ -116,21 +116,22 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 }
 
-fn update_ui_text(
-    color_value: Res<ColorValue>,
-    hex_value: Res<HexValue>,
-    mut text: Single<(&mut Text, &mut TextColor), With<HexTextMarker>>,
-) {
-    if !hex_value.is_changed() {
-        return;
+fn update_ui_text_hex(hex_value: Res<HexValue>, mut text: Single<&mut Text, With<HexTextMarker>>) {
+    if hex_value.is_changed() {
+        text.0 = hex_value.0.clone();
     }
+}
 
-    text.0.0 = hex_value.0.clone();
-    text.1.0 = if color_value.0.luminance() > 0.5 {
-        Color::BLACK
-    } else {
-        Color::WHITE
-    };
+fn update_ui_text_color(color_value: Res<ColorValue>, text_query: Query<&mut TextColor>) {
+    if color_value.is_changed() {
+        for mut text in text_query {
+            text.0 = if color_value.0.luminance() > 0.5 {
+                Color::BLACK
+            } else {
+                Color::WHITE
+            };
+        }
+    }
 }
 
 fn update_ui_bg(color_value: Res<ColorValue>, mut clear_color: ResMut<ClearColor>) {

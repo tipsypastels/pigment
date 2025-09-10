@@ -1,23 +1,16 @@
-mod clipboard;
 mod markers;
 mod picker;
+mod utils;
+mod value;
 
+use self::{markers::*, picker::*, value::*};
 use bevy::{
-    input::common_conditions::input_just_pressed,
     log::LogPlugin,
     prelude::*,
     window::{WindowLevel, WindowResolution},
 };
-use block2::RcBlock;
-use objc2_app_kit::{NSColor, NSColorSampler};
-use std::sync::{OnceLock, mpsc};
-
-static PICK_TX: OnceLock<mpsc::Sender<Color>> = OnceLock::new();
 
 fn main() {
-    let (tx, rx) = mpsc::channel();
-    let _ = PICK_TX.set(tx);
-
     App::new()
         .add_plugins(
             DefaultPlugins
@@ -34,20 +27,22 @@ fn main() {
                 })
                 .disable::<LogPlugin>(),
         )
+        .add_plugins((ValuePlugin, PickerPlugin))
         .insert_resource(ClearColor(Color::WHITE))
-        .insert_non_send_resource(PickedColorReceiver(rx))
+        .configure_sets(
+            Update,
+            (
+                UpdateMarker::Logic.after(UpdateMarker::Interaction),
+                UpdateMarker::Ui.after(UpdateMarker::Logic),
+            ),
+        )
         .add_systems(Startup, setup_ui)
-        .add_systems(Update, pick.run_if(input_just_pressed(KeyCode::Space)))
         .add_systems(
             Update,
-            click_update.run_if(input_just_pressed(MouseButton::Left)),
+            (update_ui_text, update_ui_bg).in_set(UpdateMarker::Ui),
         )
-        .add_systems(Update, pick_update)
         .run();
 }
-
-#[derive(Component)]
-struct DisplayedHexCodeText;
 
 fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2d);
@@ -85,67 +80,31 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                             ..default()
                         },
                         TextColor(Color::BLACK),
-                        DisplayedHexCodeText,
+                        crate::markers::HexTextMarker,
                     ));
                 });
         });
 }
 
-struct PickedColorReceiver(mpsc::Receiver<Color>);
-
-fn pick() {
-    let sampler = unsafe { NSColorSampler::new() };
-    let block = RcBlock::new(move |color: *mut NSColor| {
-        if color.is_null() {
-            return;
-        }
-
-        let color = unsafe { &*color };
-
-        let mut red = 0.0f64;
-        let mut green = 0.0f64;
-        let mut blue = 0.0f64;
-        let mut alpha = 0.0f64;
-
-        unsafe {
-            color.getRed_green_blue_alpha(&mut red, &mut green, &mut blue, &mut alpha);
-        }
-
-        let color = Color::srgba(red as f32, green as f32, blue as f32, alpha as f32);
-
-        if let Some(tx) = PICK_TX.get() {
-            let _ = tx.send(color);
-        }
-    });
-
-    unsafe {
-        sampler.showSamplerWithSelectionHandler(&block);
-    }
-}
-
-fn pick_update(
-    mut clear_color: ResMut<ClearColor>,
-    mut displayed_hex_code_text: Single<(&mut Text, &mut TextColor), With<DisplayedHexCodeText>>,
-    rx: NonSend<PickedColorReceiver>,
+fn update_ui_text(
+    color_value: Res<ColorValue>,
+    hex_value: Res<HexValue>,
+    mut text: Single<(&mut Text, &mut TextColor), With<HexTextMarker>>,
 ) {
-    while let Ok(color) = rx.0.try_recv() {
-        let hex = color.to_srgba().to_hex();
-
-        clipboard::copy(&hex);
-
-        clear_color.0 = color;
-        displayed_hex_code_text.0.0 = hex;
-        displayed_hex_code_text.1.0 = if color.luminance() > 0.5 {
-            Color::BLACK
-        } else {
-            Color::WHITE
-        };
+    if !hex_value.is_changed() {
+        return;
     }
+
+    text.0.0 = hex_value.0.clone();
+    text.1.0 = if color_value.0.luminance() > 0.5 {
+        Color::BLACK
+    } else {
+        Color::WHITE
+    };
 }
 
-fn click_update(displayed_hex_code_text: Single<&Text, With<DisplayedHexCodeText>>) {
-    let hex = &*displayed_hex_code_text.0;
-    if !hex.is_empty() {
-        clipboard::copy(hex);
+fn update_ui_bg(color_value: Res<ColorValue>, mut clear_color: ResMut<ClearColor>) {
+    if color_value.is_changed() {
+        clear_color.0 = color_value.0;
     }
 }

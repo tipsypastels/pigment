@@ -21,10 +21,11 @@ fn main() {
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        resolution: WindowResolution::new(240.0, 160.0),
+                        resolution: WindowResolution::new(375.0, 200.0),
                         window_level: WindowLevel::AlwaysOnTop,
+                        decorations: false,
                         resizable: false,
-                        title: "Pigment".into(),
+                        title: "Pigment Color Picker".into(),
                         ..default()
                     }),
                     ..default()
@@ -49,23 +50,42 @@ struct DisplayedHexCodeText;
 fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2d);
     commands
-        .spawn(Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            ..default()
-        })
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                border: UiRect::all(Val::Px(2.0)),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            BorderColor(Color::WHITE),
+        ))
         .with_children(|builder| {
-            builder.spawn((
-                Text::new(""),
-                TextFont {
-                    font: asset_server.load("fonts/Comfortaa.ttf"),
-                    font_size: 40.0,
-                    ..default()
-                },
-                DisplayedHexCodeText,
-            ));
+            builder
+                .spawn((
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
+                        border: UiRect::all(Val::Px(6.0)),
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::Center,
+                        ..default()
+                    },
+                    BorderColor(Color::BLACK),
+                ))
+                .with_children(|builder| {
+                    builder.spawn((
+                        Text::new("#FFFFFFF"),
+                        TextFont {
+                            font: asset_server.load("fonts/Monoton.ttf"),
+                            font_size: 40.0,
+                            ..default()
+                        },
+                        TextColor(Color::BLACK),
+                        DisplayedHexCodeText,
+                    ));
+                });
         });
 }
 

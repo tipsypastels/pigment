@@ -93,7 +93,7 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                         })
                         .with_children(|builder| {
                             builder.spawn((
-                                Text::new("Pick [Sp]"),
+                                Text::new("Pick [Space]"),
                                 TextFont {
                                     font: asset_server.load("fonts/CourierPrime.ttf"),
                                     font_size: 20.0,

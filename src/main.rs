@@ -40,13 +40,7 @@ fn main() {
         .add_systems(Startup, setup_ui)
         .add_systems(
             Update,
-            (
-                update_ui_text_hex,
-                update_ui_text_color,
-                update_ui_bg,
-                update_ui_picker_control_text,
-            )
-                .in_set(UpdateMarker::Ui),
+            (update_ui_text_hex, update_ui_text_color, update_ui_bg).in_set(UpdateMarker::Ui),
         )
         .run();
 }
@@ -106,7 +100,6 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     ..default()
                                 },
                                 TextColor(Color::BLACK),
-                                PickerControlTextMarker,
                             ));
 
                             builder.spawn((
@@ -144,19 +137,5 @@ fn update_ui_text_color(color_value: Res<ColorValue>, text_query: Query<&mut Tex
 fn update_ui_bg(color_value: Res<ColorValue>, mut clear_color: ResMut<ClearColor>) {
     if color_value.is_changed() {
         clear_color.0 = color_value.0;
-    }
-}
-
-fn update_ui_picker_control_text(
-    asset_server: Res<AssetServer>,
-    picker_open: Res<PickerOpen>,
-    mut font: Single<&mut TextFont, With<PickerControlTextMarker>>,
-) {
-    if picker_open.is_changed() {
-        font.font = if picker_open.0 {
-            asset_server.load("fonts/CourierPrime-Bold.ttf")
-        } else {
-            asset_server.load("fonts/CourierPrime.ttf")
-        }
     }
 }
